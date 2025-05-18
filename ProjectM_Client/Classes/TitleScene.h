@@ -9,9 +9,13 @@ public:
 
 	virtual void onKeyPressed(cocos2d::EventKeyboard::KeyCode keyCode, cocos2d::Event* event);
 
-	
+
 	virtual bool init();
 
 	CREATE_FUNC(TitleScene);
+
+	void doQuit(Ref* sender);
+
+	void doStart(Ref* sender);
 };
 
