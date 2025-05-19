@@ -1,5 +1,5 @@
 #include "TitleScene.h"
-#include "GameScene.h"
+#include "LobbyScene.h"
 #include "CCEventKeyboard.h"
 #include "ui/CocosGUI.h"
 
@@ -55,8 +55,8 @@ void TitleScene::onKeyPressed(EventKeyboard::KeyCode keyCode, Event* event)
 }
 
 void TitleScene::doStart(Ref* sender) {
-	auto gamescene = GameScene::createScene();
-	Director::getInstance()->replaceScene(gamescene);
+	auto lobbyscene = LobbyScene::createScene();
+	Director::getInstance()->replaceScene(lobbyscene);
 }
 
 void TitleScene::doQuit(Ref* sender) {
