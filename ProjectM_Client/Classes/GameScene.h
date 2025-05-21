@@ -25,9 +25,5 @@ public:
 
 	virtual void onError(network::WebSocket* ws, const network::WebSocket::ErrorCode& error);
 
-	void startMatch(const std::string& userId);
-
-	void joinMatch(const std::string& userId, const std::string& gameId);
-
 };
 

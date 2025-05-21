@@ -1,6 +1,7 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "LobbyScene.h"
+#include "GameScene.h"
 #include "ui/CocosGUI.h"
 #include "network/HttpRequest.h"
 #include "network/HttpResponse.h"
@@ -9,7 +10,6 @@
 #include "json/document.h";
 #include "json/stringbuffer.h"
 #include "json/writer.h"
-
 
 
 USING_NS_CC;
@@ -32,27 +32,42 @@ bool LobbyScene::init()
 
 	auto winsize = Director::getInstance()->getWinSize();
 
-	auto plabel = Label::createWithTTF("LobbyScene", "fonts/arial.ttf",34);
-	plabel->setPosition(winsize.width / 2, winsize.height / 2 + 100);
-	plabel->setTextColor(Color4B(255, 255, 255, 255));
-	this->addChild(plabel);
+	playerNum = Label::createWithTTF("", "fonts/arial.ttf",34);
+	playerNum->setPosition(winsize.width / 2, winsize.height / 2 + 100);
+	playerNum->setTextColor(Color4B(255, 255, 255, 255));
+	playerNum->setVisible(false);
+	this->addChild(playerNum);
 
 	std::string SpritePath = "kenney_ui/PNG/Extra/Double/";
-	auto createMatchButton = ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
-	createMatchButton->setPosition(Vec2(winsize.width / 2, winsize.height / 2 - 60));
-	createMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::startMatch, this, _userId));
+	createMatchButton = ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
+	createMatchButton->setTitleText("Create");
+	createMatchButton->setTitleColor(Color3B::BLACK);
+	createMatchButton->setTitleFontSize(30);
+	createMatchButton->setPosition(Vec2(winsize.width / 2-100, winsize.height / 2 - 60));
+	createMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::createMatch, this, _userId));
 	this->addChild(createMatchButton);
 
-	auto joinMatchButton= ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
+	joinMatchButton= ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
+	joinMatchButton->setTitleText("Join");
+	joinMatchButton->setTitleColor(Color3B::BLACK);
+	joinMatchButton->setTitleFontSize(30);
 	joinMatchButton->setPosition(Vec2(winsize.width / 2+100, winsize.height / 2 - 150));
 	joinMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::joinMatch, this, _userId, _gameId));
 	this->addChild(joinMatchButton);
 
+	startMatchButton = ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
+	startMatchButton->setTitleText("Start");
+	startMatchButton->setTitleColor(Color3B::BLACK);
+	startMatchButton->setTitleFontSize(30);
+	startMatchButton->setPosition(Vec2(winsize.width / 2+100, winsize.height / 2 - 60));
+	startMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::startMatch, this, _userId));
+	this->addChild(startMatchButton);
 
-	ui::EditBox* editGameID = ui::EditBox::create(Size(200, 60), SpritePath + "input_outline_square.png");
+
+	ui::EditBox* editGameID = ui::EditBox::create(Size(180, 64), SpritePath + "input_outline_square.png");
 	editGameID->setPosition(Vec2(winsize.width / 2-100, winsize.height / 2 - 150));
 	editGameID->setFontColor(Color4B(0, 0, 0, 255));
-	editGameID->setMaxLength(4);
+	editGameID->setMaxLength(6);
 	editGameID->setDelegate(this);
 
 	
@@ -62,31 +77,8 @@ bool LobbyScene::init()
 	return true;
 }
 
-void LobbyScene::startMatch(const std::string& userId) 
+void LobbyScene::createMatch(const std::string& userId) 
 {
-	/*
-	network::HttpRequest* request = new network::HttpRequest();
-	request->setUrl("http://localhost:8080/match");
-	request->setRequestType(network::HttpRequest::Type::POST);
-	std::string data = "{\"userId\":\"" + userId + "\"}";
-	request->setRequestData(data.c_str(), data.length());
-
-	request->setHeaders({ "Content-Type: application/json" });
-
-	request->setResponseCallback([this, userId](network::HttpClient* client, network::HttpResponse* response) {
-		if (!response || !response->isSucceed()) return;
-		std::string res(response->getResponseData()->begin(), response->getResponseData()->end());;
-		rapidjson::Document d;
-
-		d.Parse(res.c_str());
-		if (d.HasMember("gameId")) {
-			_gameId = d["gameId"].GetString();
-		}
-	});
-
-	network::HttpClient::getInstance()->send(request);
-	request->release();
-	*/
 	rapidjson::Document d;
 	d.SetObject();
 	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
@@ -104,7 +96,35 @@ void LobbyScene::startMatch(const std::string& userId)
 
 void LobbyScene::joinMatch(const std::string& userId, const std::string& gameId) 
 {
-	_ws->send("gameId: " + gameId + " userId: " + userId);
+	rapidjson::Document d;
+	d.SetObject();
+	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+	rapidjson::Value uId(_userId, allocator);
+	rapidjson::Value gId(_gameId, allocator);
+
+	d.AddMember("type", "join", allocator);
+	d.AddMember("gameId", gId, allocator);
+	d.AddMember("userId", uId, allocator);
+
+	rapidjson::StringBuffer buffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	d.Accept(writer);
+	_ws->send(buffer.GetString());
+}
+
+void LobbyScene::startMatch(const std::string& gameId) {
+	rapidjson::Document d;
+	d.SetObject();
+	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+	rapidjson::Value gId(_gameId, allocator);
+
+	d.AddMember("type", "start", allocator);
+	d.AddMember("gameId", gId, allocator);
+
+	rapidjson::StringBuffer buffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	d.Accept(writer);
+	_ws->send(buffer.GetString());
 }
 
 void LobbyScene::onOpen(network::WebSocket* ws) {
@@ -125,8 +145,25 @@ void LobbyScene::onMessage(network::WebSocket* ws, const network::WebSocket::Dat
 	std::string type = d["type"].GetString();
 	if (!type.compare("match")) {
 		_gameId = d["gameId"].GetString();
-		CCLOG(_gameId.c_str());
+		LobbyScene::setPlayerNum(1);
 	}
+	else if (!type.compare("join")) {
+		std::string status = d["status"].GetString();
+		if (!status.compare("accepted")) {
+			LobbyScene::setPlayerNum(d["playerNum"].GetInt());	
+		}
+	}
+	else if (!type.compare("start")) {
+		std::string status = d["status"].GetString();
+		if (!status.compare("valid")) {
+			LobbyScene::doStartGame();
+		}
+	}
+}
+
+void LobbyScene::setPlayerNum(int num) {
+	playerNum->setVisible(true);
+	playerNum->setString("gameId: "+_gameId+" / "+"player: " + std::to_string(num) + " / 4");
 }
 
 void LobbyScene::onClose(network::WebSocket* ws) 
@@ -151,5 +188,10 @@ void LobbyScene::editBoxTextChanged(ui::EditBox* editBox, const std::string& tex
 }
 void LobbyScene::editBoxReturn(ui::EditBox* editBox) {
 
+}
+
+void LobbyScene::doStartGame() {
+	auto gamescene = GameScene::createScene();
+	Director::getInstance()->replaceScene(gamescene);
 }
 

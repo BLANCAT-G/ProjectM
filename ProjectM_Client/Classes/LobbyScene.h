@@ -1,5 +1,5 @@
 #pragma once
-
+#include "ui/CocosGUI.h"
 #include "cocos2d.h"
 #include "network/WebSocket.h"
 #include "ui/UIEditBox/UIEditBox.h"
@@ -11,6 +11,8 @@ class LobbyScene : public Scene, public network::WebSocket::Delegate,public Edit
 {
 private:
 	network::WebSocket* _ws = nullptr; 
+	Label* playerNum;
+	Button* createMatchButton,*startMatchButton,* joinMatchButton;
 	std::string _gameId = "null";
 	std::string _userId = "null";
 public:
@@ -30,9 +32,15 @@ public:
 	virtual void editBoxTextChanged(ui::EditBox* editBox,const std::string& text);
 	virtual void editBoxReturn(ui::EditBox* editBox);
 
-	void startMatch(const std::string& userId);
+	void setPlayerNum(int num);
+
+	void createMatch(const std::string& userId);
 
 	void joinMatch(const std::string& userId, const std::string& gameId);
+
+	void startMatch(const std::string& gameId);
+
+	void doStartGame();
 
 };
 
