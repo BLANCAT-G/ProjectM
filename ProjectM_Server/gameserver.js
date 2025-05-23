@@ -10,6 +10,7 @@ const userMap=new Map();
 wss.on("connection",ws=>{
     ws.on("message",msg=>{
         const data=JSON.parse(msg);
+        let game
         switch(data.type){
             case 'match':
                 const gameId=Math.random().toString(36).substring(2,8);
@@ -31,7 +32,7 @@ wss.on("connection",ws=>{
                     status: "",
                     playerNum: 0
                 };
-                const game=games[data.gameId];
+                game=games[data.gameId];
                 if(!game ){
                     msg_join.status="invalid";
                 }
@@ -69,15 +70,15 @@ wss.on("connection",ws=>{
                     status: "",
                 };
 
-                const sgame=games[data.gameId];
-                if(!sgame || sgame.players.length<2){
+                game=games[data.gameId];
+                if(!game || game.players.length<2){
                     msg_start.status="invalid";
                 }else{
                     msg_start.status="valid";
                 }
                 
                 if(msg_start.status=="valid"){
-                    wss.broadcast(sgame,JSON.stringify(msg_start));
+                    wss.broadcast(game,JSON.stringify(msg_start));
                 }else{
                     ws.send(JSON.stringify(msg_start));
                 }

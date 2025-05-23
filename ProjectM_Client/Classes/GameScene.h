@@ -11,11 +11,12 @@ private:
 	network::WebSocket* _ws=nullptr;
 	std::string _gameId="null";
 public:
-	static Scene* createScene();
+
+	static Scene* createScene(network::WebSocket* ws);
 
 	virtual bool init();
 
-	CREATE_FUNC(GameScene);
+	static GameScene* create(network::WebSocket* ws);
 
 	virtual void onOpen(network::WebSocket* ws);
 
@@ -24,6 +25,8 @@ public:
     virtual void onClose(network::WebSocket* ws);
 
 	virtual void onError(network::WebSocket* ws, const network::WebSocket::ErrorCode& error);
+
+	void setWebSocket(network::WebSocket* ws);
 
 };
 

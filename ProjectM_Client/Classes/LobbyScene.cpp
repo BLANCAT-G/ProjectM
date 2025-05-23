@@ -191,7 +191,7 @@ void LobbyScene::editBoxReturn(ui::EditBox* editBox) {
 }
 
 void LobbyScene::doStartGame() {
-	auto gamescene = GameScene::createScene();
+	auto gamescene = GameScene::createScene(_ws);
 	Director::getInstance()->replaceScene(gamescene);
 }
 
