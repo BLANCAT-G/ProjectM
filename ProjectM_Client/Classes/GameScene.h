@@ -5,28 +5,23 @@
 
 USING_NS_CC;
 
-class GameScene : public Scene, public network::WebSocket::Delegate
+class GameScene : public Scene
 {
 private:
-	network::WebSocket* _ws=nullptr;
+	~GameScene();
+
 	std::string _gameId="null";
 public:
 
-	static Scene* createScene(network::WebSocket* ws);
+	static Scene* createScene();
 
 	virtual bool init();
 
-	static GameScene* create(network::WebSocket* ws);
+	CREATE_FUNC(GameScene);
 
-	virtual void onOpen(network::WebSocket* ws);
 
-    virtual void onMessage(network::WebSocket* ws, const network::WebSocket::Data& data);
+	void handleMessage(const std::string& msg);
 
-    virtual void onClose(network::WebSocket* ws);
-
-	virtual void onError(network::WebSocket* ws, const network::WebSocket::ErrorCode& error);
-
-	void setWebSocket(network::WebSocket* ws);
 
 };
 

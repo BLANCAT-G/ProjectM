@@ -1,4 +1,5 @@
 #include "GameScene.h"
+#include "ServerManager.h"
 #include "ui/CocosGUI.h"
 #include "network/HttpRequest.h"
 #include "network/HttpResponse.h"
@@ -10,23 +11,8 @@
 
 USING_NS_CC;
 
-GameScene* GameScene::create(network::WebSocket* ws) {
-	GameScene* pRet = new GameScene();
-	if (pRet && pRet->init()) {
-		pRet->setWebSocket(ws);
-		pRet->autorelease();
-		return pRet;
-	}
-	else {
-		delete pRet;
-		pRet = NULL;
-		return NULL;
-	}
-}
-
-Scene* GameScene::createScene(network::WebSocket* ws) {
-	Scene* newScene = GameScene::create(ws);
-	newScene->init();
+Scene* GameScene::createScene() {
+	Scene* newScene = GameScene::create();
 	return newScene;
 }
 
@@ -36,6 +22,9 @@ bool GameScene::init()
 		return false;
 	}
 
+	ServerManager::getInstance().addMessageListener("GameScene", [this](const std::string& msg) {
+		this->handleMessage(msg);
+	});
 
 	auto winsize = Director::getInstance()->getWinSize();
 
@@ -55,31 +44,24 @@ bool GameScene::init()
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	d.Accept(writer);
 
-	_ws->send(buffer.GetString());
 
 	return true;
 }
 
+void GameScene::handleMessage(const std::string& msg) {
+	rapidjson::Document d;
+	d.Parse(msg.c_str());
 
-void GameScene::onOpen(network::WebSocket* ws) {
-	 ws->send("hi");
+	if (d.HasParseError()) {
+		CCLOG("JSON 파싱 실패");
+		return;
+	}
+
 }
 
- void GameScene::onMessage(network::WebSocket* ws, const network::WebSocket::Data& data){
-	CCLOG("서버로부터 메시지: %s", data.bytes);
-}
 
-void GameScene::onClose(network::WebSocket* ws)  {
-	CCLOG("WebSocket 닫힘");
-	delete ws;
-}
-
- void GameScene::onError(network::WebSocket* ws, const network::WebSocket::ErrorCode& error) {
-	CCLOG("WebSocket 에러 발생");
-}
-
- void GameScene::setWebSocket(network::WebSocket* ws) {
-	 _ws = ws;
+ GameScene::~GameScene() {
+	 ServerManager::getInstance().removeMessageListener("GameScene");
  }
 
 

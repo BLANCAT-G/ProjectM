@@ -1,6 +1,7 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "LobbyScene.h"
+#include "ServerManager.h"
 #include "GameScene.h"
 #include "ui/CocosGUI.h"
 #include "network/HttpRequest.h"
@@ -25,8 +26,10 @@ bool LobbyScene::init()
 		return false;
 	}
 
-	_ws = new network::WebSocket();
-	_ws->init(*this, "ws://localhost:8080");
+	ServerManager::getInstance().connect("ws://localhost:8080");
+	ServerManager::getInstance().addMessageListener("LobbyScene", [this](const std::string& msg) {
+		this->handleMessage(msg);
+	});
 	
 	_userId = std::to_string(random(0, 100000));
 
@@ -91,7 +94,7 @@ void LobbyScene::createMatch(const std::string& userId)
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	d.Accept(writer);
 
-	_ws->send(buffer.GetString());
+	ServerManager::getInstance().sendMessage(buffer.GetString());
 }
 
 void LobbyScene::joinMatch(const std::string& userId, const std::string& gameId) 
@@ -109,7 +112,8 @@ void LobbyScene::joinMatch(const std::string& userId, const std::string& gameId)
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	d.Accept(writer);
-	_ws->send(buffer.GetString());
+
+	ServerManager::getInstance().sendMessage(buffer.GetString());
 }
 
 void LobbyScene::startMatch(const std::string& gameId) {
@@ -124,13 +128,11 @@ void LobbyScene::startMatch(const std::string& gameId) {
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	d.Accept(writer);
-	_ws->send(buffer.GetString());
+
+	ServerManager::getInstance().sendMessage(buffer.GetString());
 }
 
-void LobbyScene::onOpen(network::WebSocket* ws) {
-	CCLOG("opend");
-}
-
+/*
 void LobbyScene::onMessage(network::WebSocket* ws, const network::WebSocket::Data& data) 
 {
 	std::string msg(data.bytes, data.len);
@@ -160,21 +162,39 @@ void LobbyScene::onMessage(network::WebSocket* ws, const network::WebSocket::Dat
 		}
 	}
 }
+*/
+
+void LobbyScene::handleMessage(const std::string& msg) {
+	rapidjson::Document d;
+	d.Parse(msg.c_str());
+
+	if (d.HasParseError()) {
+		CCLOG("JSON ÆÄ½Ì ½ÇÆÐ");
+		return;
+	}
+
+	std::string type = d["type"].GetString();
+	if (!type.compare("match")) {
+		_gameId = d["gameId"].GetString();
+		LobbyScene::setPlayerNum(1);
+	}
+	else if (!type.compare("join")) {
+		std::string status = d["status"].GetString();
+		if (!status.compare("accepted")) {
+			LobbyScene::setPlayerNum(d["playerNum"].GetInt());
+		}
+	}
+	else if (!type.compare("start")) {
+		std::string status = d["status"].GetString();
+		if (!status.compare("valid")) {
+			LobbyScene::doStartGame();
+		}
+	}
+}
 
 void LobbyScene::setPlayerNum(int num) {
 	playerNum->setVisible(true);
 	playerNum->setString("gameId: "+_gameId+" / "+"player: " + std::to_string(num) + " / 4");
-}
-
-void LobbyScene::onClose(network::WebSocket* ws) 
-{
-	CCLOG("WebSocket closed");
-	delete ws;
-}
-
-void LobbyScene::onError(network::WebSocket* ws, const network::WebSocket::ErrorCode& error) 
-{
-	CCLOG("WebSocket  error");
 }
 
 void LobbyScene::editBoxEditingDidBegin(ui::EditBox* editBox) {
@@ -191,7 +211,11 @@ void LobbyScene::editBoxReturn(ui::EditBox* editBox) {
 }
 
 void LobbyScene::doStartGame() {
-	auto gamescene = GameScene::createScene(_ws);
+	auto gamescene = GameScene::createScene();
 	Director::getInstance()->replaceScene(gamescene);
+}
+
+LobbyScene::~LobbyScene() {
+	ServerManager::getInstance().removeMessageListener("LobbyScene");
 }
 
