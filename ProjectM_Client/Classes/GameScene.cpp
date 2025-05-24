@@ -26,6 +26,7 @@ bool GameScene::init()
 		this->handleMessage(msg);
 	});
 
+
 	auto winsize = Director::getInstance()->getWinSize();
 
 	auto plabel = Label::createWithTTF("GameScene", "fonts/arial.ttf", 34);

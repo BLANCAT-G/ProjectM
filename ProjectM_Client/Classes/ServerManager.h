@@ -8,6 +8,9 @@
 class ServerManager : public cocos2d::network::WebSocket::Delegate
 {
 public:
+    std::string gameId = "null";
+    std::string userId = "null";
+
     static ServerManager& getInstance();
 
     void connect(const std::string& url);

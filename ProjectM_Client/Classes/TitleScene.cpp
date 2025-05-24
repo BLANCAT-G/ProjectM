@@ -1,4 +1,5 @@
 #include "TitleScene.h"
+#include "ServerManager.h"
 #include "LobbyScene.h"
 #include "CCEventKeyboard.h"
 #include "ui/CocosGUI.h"
@@ -16,7 +17,7 @@ bool TitleScene::init()
 		return false;
 	}
 
-
+	ServerManager::getInstance().connect("ws://localhost:8080");
 	auto winsize = Director::getInstance()->getWinSize();
 
 	auto plabel = Label::createWithTTF("MahjongCube", "fonts/arial.ttf", 34);

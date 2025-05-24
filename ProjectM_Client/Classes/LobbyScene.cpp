@@ -26,12 +26,12 @@ bool LobbyScene::init()
 		return false;
 	}
 
-	ServerManager::getInstance().connect("ws://localhost:8080");
 	ServerManager::getInstance().addMessageListener("LobbyScene", [this](const std::string& msg) {
 		this->handleMessage(msg);
 	});
-	
-	_userId = std::to_string(random(0, 100000));
+
+	ServerManager::getInstance().userId= std::to_string(random(0, 100000));
+	this->initServer();
 
 	auto winsize = Director::getInstance()->getWinSize();
 
@@ -47,7 +47,7 @@ bool LobbyScene::init()
 	createMatchButton->setTitleColor(Color3B::BLACK);
 	createMatchButton->setTitleFontSize(30);
 	createMatchButton->setPosition(Vec2(winsize.width / 2-100, winsize.height / 2 - 60));
-	createMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::createMatch, this, _userId));
+	createMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::createMatch, this));
 	this->addChild(createMatchButton);
 
 	joinMatchButton= ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
@@ -55,7 +55,7 @@ bool LobbyScene::init()
 	joinMatchButton->setTitleColor(Color3B::BLACK);
 	joinMatchButton->setTitleFontSize(30);
 	joinMatchButton->setPosition(Vec2(winsize.width / 2+100, winsize.height / 2 - 150));
-	joinMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::joinMatch, this, _userId, _gameId));
+	joinMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::joinMatch, this));
 	this->addChild(joinMatchButton);
 
 	startMatchButton = ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
@@ -63,7 +63,7 @@ bool LobbyScene::init()
 	startMatchButton->setTitleColor(Color3B::BLACK);
 	startMatchButton->setTitleFontSize(30);
 	startMatchButton->setPosition(Vec2(winsize.width / 2+100, winsize.height / 2 - 60));
-	startMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::startMatch, this, _userId));
+	startMatchButton->addClickEventListener(CC_CALLBACK_0(LobbyScene::startMatch, this));
 	this->addChild(startMatchButton);
 
 
@@ -80,12 +80,28 @@ bool LobbyScene::init()
 	return true;
 }
 
-void LobbyScene::createMatch(const std::string& userId) 
+void LobbyScene::initServer() {
+	rapidjson::Document d;
+	d.SetObject();
+	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+	rapidjson::Value value(ServerManager::getInstance().userId, allocator);
+
+	d.AddMember("type", "init", allocator);
+	d.AddMember("userId", value, allocator);
+
+	rapidjson::StringBuffer buffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	d.Accept(writer);
+
+	ServerManager::getInstance().sendMessage(buffer.GetString());
+}
+
+void LobbyScene::createMatch() 
 {
 	rapidjson::Document d;
 	d.SetObject();
 	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
-	rapidjson::Value value(_userId, allocator);
+	rapidjson::Value value(ServerManager::getInstance().userId, allocator);
 
 	d.AddMember("type", "match", allocator);
 	d.AddMember("userId", value , allocator);
@@ -97,13 +113,13 @@ void LobbyScene::createMatch(const std::string& userId)
 	ServerManager::getInstance().sendMessage(buffer.GetString());
 }
 
-void LobbyScene::joinMatch(const std::string& userId, const std::string& gameId) 
+void LobbyScene::joinMatch() 
 {
 	rapidjson::Document d;
 	d.SetObject();
 	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
-	rapidjson::Value uId(_userId, allocator);
-	rapidjson::Value gId(_gameId, allocator);
+	rapidjson::Value uId(ServerManager::getInstance().userId, allocator);
+	rapidjson::Value gId(ServerManager::getInstance().gameId, allocator);
 
 	d.AddMember("type", "join", allocator);
 	d.AddMember("gameId", gId, allocator);
@@ -116,11 +132,11 @@ void LobbyScene::joinMatch(const std::string& userId, const std::string& gameId)
 	ServerManager::getInstance().sendMessage(buffer.GetString());
 }
 
-void LobbyScene::startMatch(const std::string& gameId) {
+void LobbyScene::startMatch() {
 	rapidjson::Document d;
 	d.SetObject();
 	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
-	rapidjson::Value gId(_gameId, allocator);
+	rapidjson::Value gId(ServerManager::getInstance().gameId, allocator);
 
 	d.AddMember("type", "start", allocator);
 	d.AddMember("gameId", gId, allocator);
@@ -131,38 +147,6 @@ void LobbyScene::startMatch(const std::string& gameId) {
 
 	ServerManager::getInstance().sendMessage(buffer.GetString());
 }
-
-/*
-void LobbyScene::onMessage(network::WebSocket* ws, const network::WebSocket::Data& data) 
-{
-	std::string msg(data.bytes, data.len);
-	rapidjson::Document d;
-	d.Parse(msg.c_str());
-
-	if (d.HasParseError()) {
-		CCLOG("JSON ÆÄ½Ì ½ÇÆÐ");
-		return;
-	}
-
-	std::string type = d["type"].GetString();
-	if (!type.compare("match")) {
-		_gameId = d["gameId"].GetString();
-		LobbyScene::setPlayerNum(1);
-	}
-	else if (!type.compare("join")) {
-		std::string status = d["status"].GetString();
-		if (!status.compare("accepted")) {
-			LobbyScene::setPlayerNum(d["playerNum"].GetInt());	
-		}
-	}
-	else if (!type.compare("start")) {
-		std::string status = d["status"].GetString();
-		if (!status.compare("valid")) {
-			LobbyScene::doStartGame();
-		}
-	}
-}
-*/
 
 void LobbyScene::handleMessage(const std::string& msg) {
 	rapidjson::Document d;
@@ -175,7 +159,7 @@ void LobbyScene::handleMessage(const std::string& msg) {
 
 	std::string type = d["type"].GetString();
 	if (!type.compare("match")) {
-		_gameId = d["gameId"].GetString();
+		ServerManager::getInstance().gameId= d["gameId"].GetString();
 		LobbyScene::setPlayerNum(1);
 	}
 	else if (!type.compare("join")) {
@@ -194,7 +178,7 @@ void LobbyScene::handleMessage(const std::string& msg) {
 
 void LobbyScene::setPlayerNum(int num) {
 	playerNum->setVisible(true);
-	playerNum->setString("gameId: "+_gameId+" / "+"player: " + std::to_string(num) + " / 4");
+	playerNum->setString("gameId: "+ ServerManager::getInstance().gameId +" / "+"player: " + std::to_string(num) + " / 4");
 }
 
 void LobbyScene::editBoxEditingDidBegin(ui::EditBox* editBox) {
@@ -204,7 +188,7 @@ void LobbyScene::editBoxEditingDidEnd(ui::EditBox* editBox) {
 
 }
 void LobbyScene::editBoxTextChanged(ui::EditBox* editBox, const std::string& text) {
-	_gameId = text;
+	ServerManager::getInstance().gameId = text;
 }
 void LobbyScene::editBoxReturn(ui::EditBox* editBox) {
 

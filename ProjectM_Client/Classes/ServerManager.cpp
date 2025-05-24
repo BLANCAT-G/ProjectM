@@ -51,6 +51,7 @@ void ServerManager::onMessage(cocos2d::network::WebSocket* ws, const cocos2d::ne
 
     for (auto& pair : _listeners)
     {
+        CCLOG(pair.first.c_str());
         pair.second(msg);
     }
 }

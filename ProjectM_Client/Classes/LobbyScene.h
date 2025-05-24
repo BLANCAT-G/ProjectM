@@ -14,8 +14,6 @@ private:
 
 	Label* playerNum;
 	Button* createMatchButton,*startMatchButton,* joinMatchButton;
-	std::string _gameId = "null";
-	std::string _userId = "null";
 public:
 	static Scene* createScene();
 
@@ -30,11 +28,13 @@ public:
 
 	void setPlayerNum(int num);
 
-	void createMatch(const std::string& userId);
+	void createMatch();
 
-	void joinMatch(const std::string& userId, const std::string& gameId);
+	void joinMatch();
 
-	void startMatch(const std::string& gameId);
+	void startMatch();
+	
+	void initServer();
 
 	void doStartGame();
 
