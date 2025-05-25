@@ -1,15 +1,14 @@
 const express = require('express');
 const http = require('http');
-const { json } = require('stream/consumers');
 const {WebSocketServer}=require("ws");
 const wss=new WebSocketServer({port: 8080});
 
 let games={};
+const tileDeck=require("./tiledeck.js");
 const userMap=new Map();
 const reverserMap=new Map();
 const TURN_TIME_LIMIT=10000;
 const CALL_TIME_LIMIT=3000;
-
 
 wss.on("connection",ws=>{
     ws.on("message",msg=>{
@@ -30,6 +29,7 @@ wss.on("connection",ws=>{
 
                 games[gameId]= { // 게임 정보
                     players: [data.userId],
+                    deck: [],
                     currentTurn: 0,
                     readyPlayer: 0,
                     status: 'waiting'
@@ -87,10 +87,13 @@ wss.on("connection",ws=>{
                 };
 
                 game=games[data.gameId];
-                if(!game || game.players.length<2){
+                if(!game || game.players.length<1){
                     msg_start.status="invalid";
                 }else{
                     msg_start.status="valid";
+                    tileDeck.reset();
+                    game.deck=tileDeck.copydeck();
+                    console.log(game.deck);
                 }
                 console.log("송신: ",msg_start);
                 if(msg_start.status=="valid"){

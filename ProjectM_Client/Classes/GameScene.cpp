@@ -26,25 +26,22 @@ bool GameScene::init()
 		this->handleMessage(msg);
 	});
 
-
 	auto winsize = Director::getInstance()->getWinSize();
 
-	auto plabel = Label::createWithTTF("GameScene", "fonts/arial.ttf", 34);
-	plabel->setPosition(winsize.width / 2, winsize.height / 2 + 50);
-	plabel->setTextColor(Color4B(255, 255, 255, 255));
-	this->addChild(plabel);
+	SpriteFrameCache::getInstance()->addSpriteFramesWithFile("tilesheet/tilesheet.plist");
 
-	rapidjson::Document d;
-	d.SetObject();
-	rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+	auto sprite = Sprite::createWithSpriteFrameName("0m.png");
+	sprite->setPosition(Vec2(winsize.width / 2, winsize.height / 2));
+	this->addChild(sprite);
+	
 
-	d.AddMember("type", "match", allocator);
-	d.AddMember("userId", "11", allocator);
-
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	d.Accept(writer);
-
+	std::string SpritePath = "kenney_ui/PNG/Extra/Double/";
+	skipButton = ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
+	skipButton->setTitleText("Skip");
+	skipButton->setTitleColor(Color3B::BLACK);
+	skipButton->setTitleFontSize(30);
+	skipButton->setPosition(Vec2(winsize.width - 150, winsize.height / 2 - 120));
+	this->addChild(skipButton);
 
 	return true;
 }
@@ -57,6 +54,14 @@ void GameScene::handleMessage(const std::string& msg) {
 		CCLOG("JSON ÆÄ½Ì ½ÇÆÐ");
 		return;
 	}
+
+}
+
+void GameScene::startMyTurn() {
+
+}
+
+void GameScene::skipTurn() {
 
 }
 
