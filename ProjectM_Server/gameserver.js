@@ -119,3 +119,7 @@ wss.broadcast=(game,msg)=>{
         }
     });
 };
+
+function(tiles){
+
+}
