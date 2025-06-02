@@ -87,7 +87,7 @@ void LobbyScene::initServer() {
 	rapidjson::Value value(ServerManager::getInstance().userId, allocator);
 
 	d.AddMember("type", "init", allocator);
-	d.AddMember("userId", value, allocator);
+	d.AddMember("playerId", value, allocator);
 
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -104,7 +104,7 @@ void LobbyScene::createMatch()
 	rapidjson::Value value(ServerManager::getInstance().userId, allocator);
 
 	d.AddMember("type", "match", allocator);
-	d.AddMember("userId", value , allocator);
+	d.AddMember("playerId", value , allocator);
 
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -123,7 +123,7 @@ void LobbyScene::joinMatch()
 
 	d.AddMember("type", "join", allocator);
 	d.AddMember("gameId", gId, allocator);
-	d.AddMember("userId", uId, allocator);
+	d.AddMember("playerId", uId, allocator);
 
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
