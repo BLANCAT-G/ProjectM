@@ -11,11 +11,12 @@ const TURN_TIME_LIMIT=10000;
 const CALL_TIME_LIMIT=3000;
 
 class GameRoom {
-    constructor(roomId) {
-        this.roomId = roomId;
+    constructor(gameId) {
+        tileDeck.reset();
+        this.gameId = gameId;
         this.players = []; // { id, ws }
         this.turnIndex = 0;
-        this.deck=tileDeck.reset().copydeck();
+        this.deck=tileDeck.copydeck();
         this.timer = null;
         this.turnTimeLimit = 10 * 1000; // 10초
         this.started = false;
@@ -23,11 +24,15 @@ class GameRoom {
         this.playerDeck=[];
     }
 
+
     addPlayer(id, ws) {
         this.players.push({ id, ws });
         this.playerDeck.push([]);
+        console.log("송신: ",this.players.map(p => p.id));
         this.broadcast({
             type: "join",
+            status: "valid",
+            gameId: this.gameId,
             players: this.players.map(p => p.id)
         });
 
@@ -122,7 +127,7 @@ wss.on("connection",ws=>{
                 }
 
                 games[gameId]=new GameRoom(gameId);
-                games[gameId].addPlayer(data.userId,ws);
+                games[gameId].addPlayer(ws.playerId,ws);
                 ws.gameId=gameId;
 
                 break;
@@ -136,7 +141,8 @@ wss.on("connection",ws=>{
                         ws.send(JSON.stringify({type:"join",status:"full"}));
                     }
                     else{
-                        game.addPlayer(data.playerId,ws);
+                        game.addPlayer(ws.playerId,ws);
+                        ws.gameId=data.gameId;
                     }
                 }
                 

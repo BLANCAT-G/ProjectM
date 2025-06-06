@@ -1,5 +1,6 @@
 #pragma once
 #include "ui/CocosGUI.h"
+#include "PlayerSlot.h";
 #include "cocos2d.h"
 #include "network/WebSocket.h"
 #include "ui/UIEditBox/UIEditBox.h"
@@ -12,8 +13,9 @@ class LobbyScene : public Scene,public EditBoxDelegate
 private:
 	~LobbyScene();
 
-	Label* playerNum;
+	Label* gameIdLabel;
 	Button* createMatchButton,*startMatchButton,* joinMatchButton;
+	PlayerSlot* playerSlot[4];
 public:
 	static Scene* createScene();
 
@@ -26,7 +28,9 @@ public:
 	virtual void editBoxTextChanged(ui::EditBox* editBox,const std::string& text);
 	virtual void editBoxReturn(ui::EditBox* editBox);
 
-	void setPlayerNum(int num);
+	void setPlayerSlot(int num, const std::string& playerId);
+
+	void setGameIdLabel(const std::string& playerId);
 
 	void createMatch();
 

@@ -1,6 +1,7 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "LobbyScene.h"
+
 #include "ServerManager.h"
 #include "GameScene.h"
 #include "ui/CocosGUI.h"
@@ -34,14 +35,19 @@ bool LobbyScene::init()
 	this->initServer();
 
 	auto winsize = Director::getInstance()->getWinSize();
-
-	playerNum = Label::createWithTTF("", "fonts/arial.ttf",34);
-	playerNum->setPosition(winsize.width / 2, winsize.height / 2 + 100);
-	playerNum->setTextColor(Color4B(255, 255, 255, 255));
-	playerNum->setVisible(false);
-	this->addChild(playerNum);
-
 	std::string SpritePath = "kenney_ui/PNG/Extra/Double/";
+
+	for (int i = 0; i < 4; ++i) {
+		playerSlot[i] = PlayerSlot::create(SpritePath + "button_rectangle_line.png");
+		playerSlot[i]->setPosition(Vec2(winsize.width / 2 -300 + i * 200, winsize.height / 2+ 100));
+		this->addChild(playerSlot[i]);
+	}
+
+	gameIdLabel = Label::createWithTTF("", "fonts/arial.ttf",34);
+	gameIdLabel->setPosition(winsize.width / 2, winsize.height / 2 + 200);
+	gameIdLabel->setTextColor(Color4B(255, 255, 255, 255));
+	this->addChild(gameIdLabel);
+	
 	createMatchButton = ui::Button::create(SpritePath + "button_rectangle_depth_line.png", SpritePath + "button_rectangle_line.png");
 	createMatchButton->setTitleText("Create");
 	createMatchButton->setTitleColor(Color3B::BLACK);
@@ -160,12 +166,17 @@ void LobbyScene::handleMessage(const std::string& msg) {
 	std::string type = d["type"].GetString();
 	if (!type.compare("match")) {
 		ServerManager::getInstance().gameId= d["gameId"].GetString();
-		LobbyScene::setPlayerNum(1);
 	}
 	else if (!type.compare("join")) {
 		std::string status = d["status"].GetString();
-		if (!status.compare("accepted")) {
-			LobbyScene::setPlayerNum(d["playerNum"].GetInt());
+		if (!status.compare("valid")) {
+			setGameIdLabel(d["gameId"].GetString());
+			const rapidjson::Value& players = d["players"];
+			assert(players.IsArray());
+			for (int i = 0; i < 4; ++i) {
+				if (i >= players.Size()) LobbyScene::setPlayerSlot(i, "");
+				else LobbyScene::setPlayerSlot(i, players[i].GetString());
+			}
 		}
 	}
 	else if (!type.compare("start")) {
@@ -176,9 +187,12 @@ void LobbyScene::handleMessage(const std::string& msg) {
 	}
 }
 
-void LobbyScene::setPlayerNum(int num) {
-	playerNum->setVisible(true);
-	playerNum->setString("gameId: "+ ServerManager::getInstance().gameId +" / "+"player: " + std::to_string(num) + " / 4");
+void LobbyScene::setPlayerSlot(int num,const std::string& playerId) {
+	playerSlot[num]->SetPlayerInfo(playerId);
+}
+
+void LobbyScene::setGameIdLabel(const std::string& gameId) {
+	gameIdLabel->setString("gameId: "+gameId);
 }
 
 void LobbyScene::editBoxEditingDidBegin(ui::EditBox* editBox) {
