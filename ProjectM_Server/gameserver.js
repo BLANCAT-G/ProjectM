@@ -11,8 +11,9 @@ const TURN_TIME_LIMIT=10000;
 const CALL_TIME_LIMIT=3000;
 
 class GameRoom {
-    constructor(gameId) {
+    constructor(gameId,hostId) {
         tileDeck.reset();
+        this.host=hostId;
         this.gameId = gameId;
         this.players = []; // { id, ws }
         this.turnIndex = 0;
@@ -23,6 +24,7 @@ class GameRoom {
         this.board=[];
         this.playerDeck=[];
     }
+    
 
 
     addPlayer(id, ws) {
@@ -41,11 +43,48 @@ class GameRoom {
         }
     }
 
+    leavePlayer(id){
+        for(let i=0;i<this.players.length;i++){
+            if(this.players[i].id==id) {
+                this.players.splice(i,1);
+                break;
+            }
+        }
+    }
 
-    startGame() {
-        this.started = true;
-        this.broadcast({ type: "start" });
-        this.startTurn();
+    destruct(){
+        if(games[this.gameId]) delete games[this.gameId];
+        this.broadcast({
+            type:"error",
+            status:"closed"
+        })
+    }
+
+    changeHost(newHostId){
+        this.hostId=newHostId;
+        this.broadcast({
+            type:"host",
+            hostId: this.hostId
+        })
+    }
+
+    startGame(playerId) {
+        if(this.hostId == playerId){ // host가 아닌 유저가 요청시 무시
+            if(this.players.length==4){ 
+                this.started = true;
+                this.broadcast({ 
+                    type: "start" ,
+                    status: "valid"
+                });
+                this.startTurn();
+            } 
+            else{
+                this.sendTo(this.hostId,{
+                    type:"start",
+                    status:"waiting"
+                })
+            } 
+        }    
     }
 
     startTurn() {
@@ -80,7 +119,7 @@ class GameRoom {
 
     handleTimeout(playerId) {
         this.broadcast({
-            type: "turn_timeout",
+            type: "timeout",
             playerId
         });
         this.nextTurn();
@@ -126,7 +165,7 @@ wss.on("connection",ws=>{
                     if(!games[gameId]) break;
                 }
 
-                games[gameId]=new GameRoom(gameId);
+                games[gameId]=new GameRoom(gameId,ws.playerId);
                 games[gameId].addPlayer(ws.playerId,ws);
                 ws.gameId=gameId;
 
@@ -147,7 +186,13 @@ wss.on("connection",ws=>{
                 }
                 
                 break;
-            case 'ready':
+            case 'start':
+                game=games[data.gameId];
+                if(!game){
+                    ws.send(JSON.stringify({type:"start",status:"invalid"}));
+                }else{
+                    game.startGame(ws.playerId);
+                }
                 break;
             
         }
@@ -155,7 +200,7 @@ wss.on("connection",ws=>{
 
     ws.on("close",()=>{
         if(ws.gameId){
-            
+            game=games[data]
         }
     })
 });
