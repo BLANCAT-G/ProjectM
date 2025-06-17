@@ -26,7 +26,6 @@ class GameRoom {
     }
     
 
-
     addPlayer(id, ws) {
         this.players.push({ id, ws });
         this.playerDeck.push([]);
@@ -194,7 +193,12 @@ wss.on("connection",ws=>{
                     game.startGame(ws.playerId);
                 }
                 break;
-            
+            case 'turn':
+                game=games[data.gameId];
+                if(!game){
+                    game.receiveAction(ws.playerId,data);
+                }
+                break;
         }
     });
 
